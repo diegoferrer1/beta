@@ -1,771 +1,473 @@
 <!DOCTYPE html>
-<html lang="es" class="scroll-smooth">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú - La Esquina RD</title>
+    <title>BurgerTok - Menú de Hamburguesas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- IMPORTANTE: Para que el mapa funcione, debes reemplazar 'TU_API_KEY_AQUI' con tu propia clave de API de Google Maps. -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDUNTpFKdTVDC2N-G1tqP377kWr2iddpA4&callback=initMap" async defer></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* Definición de la paleta de colores de la marca y estilos base */
         :root {
-            --color-bg: #F1F1F1;
-            --color-text: #303030;
-            --color-primary: #F48E38;
-            --color-secondary: #45251A;
+            --md-color-primary: #fbbf24; /* Amber 400 */
+            --md-color-on-primary: #1e293b; /* Slate 800 */
+            --md-color-surface: #111827; /* Gray 900 */
+            --md-color-on-surface: #f9fafb; /* Gray 50 */
+            --md-color-surface-container: rgba(20, 20, 20, 0.6);
+            --md-color-surface-modal: #1f2937; /* Gray 800 */
         }
-
-        /* Estilos personalizados */
+    
+        /* Estilo base para el cuerpo y la fuente */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--color-bg);
-            color: var(--color-text);
+            background-color: var(--md-color-surface);
+            color: var(--md-color-on-surface);
+            overflow: hidden; /* Evitar scroll en el body */
         }
 
-        .font-display {
-            font-family: 'Playfair Display', serif;
-        }
-        
-        /* Estilos para las animaciones de scroll */
-        .reveal {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* Contenedor principal para los "shorts" con scroll snap */
+        .shorts-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .shorts-container::-webkit-scrollbar {
+            display: none;
         }
-        
-        /* Estilos para los modales */
-        .modal-overlay {
-            position: fixed;
+
+        /* Cada "short" individual */
+        .short-item {
+            scroll-snap-align: start;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Superposición de video/imagen para oscurecer el fondo */
+        .background-video {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            object-fit: cover;
+            z-index: -1;
+            filter: brightness(0.5);
+        }
+        
+        /* Animaciones de entrada */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-on-load {
+            opacity: 0; /* Start hidden */
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+
+        /* Estilos para desvanecer elementos en scroll */
+        .logo-header, #swipe-notice {
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+        .fade-out {
             opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
+            pointer-events: none;
+            transform: translateY(-20px);
         }
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
+        #swipe-notice.fade-out {
+            transform: translateY(20px);
         }
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 1.5rem;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        
+        /* Estilos Material 3 Expressive */
+        .m3-button {
+            background-color: var(--md-color-primary);
+            color: var(--md-color-on-primary);
+            border-radius: 1.5rem; /* 24px */
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-
-        /* Keyframes para animaciones del carrito */
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
+        .m3-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
+        .m3-fab {
+            background-color: var(--md-color-primary);
+            color: var(--md-color-on-primary);
+            width: 4rem;
+            height: 4rem;
+            border-radius: 1.5rem; /* 24px */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-
-        .shake {
-            animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+        
+        .m3-modal {
+             background-color: var(--md-color-surface-modal);
+             border-radius: 1.75rem; /* 28px */
         }
-
-        .bounce {
-            animation: bounce 0.5s ease;
+        
+        .m3-content-container {
+            background-color: var(--md-color-surface-container);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 1.5rem 1.5rem 0 0;
         }
-
-        /* Estilo para el botón después de agregar un item */
-        .add-to-cart-btn.added {
-            background-color: var(--color-secondary);
-            transform: scale(0.9);
+        
+        /* Animación para el botón de agregar */
+        @keyframes button-pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
-
-        /* Ocultar la barra de scroll para los anclajes del menú */
-        #menu-anchors::-webkit-scrollbar {
-            display: none;
+        .pop-animation {
+            animation: button-pop 0.3s ease-out;
         }
-        #menu-anchors {
-            -ms-overflow-style: none;  /* IE y Edge */
-            scrollbar-width: none;  /* Firefox */
+        
+        /* Animación para el carrito */
+        @keyframes jiggle {
+          0%, 100% { transform: translateX(0) scale(1.1); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px) scale(1.1); }
+          20%, 40%, 60%, 80% { transform: translateX(2px) scale(1.1); }
+        }
+        .jiggle-animation {
+          animation: jiggle 0.5s ease-in-out;
         }
     </style>
 </head>
-<body class="bg-[var(--color-bg)] text-[var(--color-text)] overflow-x-hidden">
+<body>
 
-    <!-- Header y Navegación -->
-    <header class="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="index.html" class="text-3xl font-extrabold font-display" style="color: var(--color-secondary);">
-                La Esquina
-            </a>
-            <div class="hidden md:flex items-center space-x-6">
-                <a href="index.html" class="text-gray-700 hover:text-[var(--color-primary)] transition-colors duration-300">Inicio</a>
-                <a href="index.html#galeria" class="text-gray-700 hover:text-[var(--color-primary)] transition-colors duration-300">Galería</a>
-                <a href="index.html#contacto" class="text-gray-700 hover:text-[var(--color-primary)] transition-colors duration-300">Contacto</a>
+    <div class="shorts-container">
+        <!-- Short 1: La Clásica -->
+        <section id="clasica" class="short-item">
+            <video class="background-video" autoplay loop muted playsinline poster="https://placehold.co/1080x1920/000000/ffffff?text=Cargando...">
+                <source src="burger.mp4" type="video/mp4">
+            </video>
+            <div class="absolute top-0 left-0 p-6">
+                <h1 class="logo-header text-4xl font-black tracking-tighter">BurgerTok 🔥</h1>
             </div>
-            <button id="mobile-menu-button" class="md:hidden text-gray-800">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
-            </button>
-        </nav>
-        <!-- Menú Móvil -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white p-4">
-            <a href="index.html" class="block py-2 text-center text-gray-700 hover:bg-gray-100 rounded-lg">Inicio</a>
-            <a href="index.html#galeria" class="block py-2 text-center text-gray-700 hover:bg-gray-100 rounded-lg">Galería</a>
-            <a href="index.html#contacto" class="block py-2 text-center text-gray-700 hover:bg-gray-100 rounded-lg">Contacto</a>
-        </div>
-    </header>
-
-    <main class="pt-16 md:pt-24">
-        <!-- ========== SECCIÓN MENÚ ========== -->
-        <section id="menu" class="pb-20 md:pb-28">
-            <div class="container mx-auto px-6">
-                <div class="text-center mb-12 reveal">
-                    <h1 id="menu-title" class="text-5xl md:text-7xl font-display font-extrabold" style="color: var(--color-secondary);">Nuestro Menú</h1>
-                    <p class="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">Selecciona tus platos y haz tu pedido directamente por WhatsApp.</p>
+            <div class="absolute bottom-0 left-0 p-6 pb-24 w-full m3-content-container">
+                <div class="flex justify-between items-center mb-3 animate-on-load">
+                     <h2 class="text-3xl font-bold">La Clásica</h2>
+                     <button class="add-to-cart-btn m3-button text-sm" data-id="clasica" data-name="La Clásica" data-price="350">
+                        Agregar
+                    </button>
                 </div>
-                
-                <!-- Contenedor de Anclas del Menú con Flechas -->
-                <div class="sticky top-24 z-40 mb-12">
-                    <div class="relative">
-                        <button id="scroll-left" class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full w-12 h-12 items-center justify-center shadow-lg hover:bg-gray-200 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-                        <div id="menu-anchors" class="bg-white/80 backdrop-blur-lg rounded-full shadow-md flex flex-nowrap overflow-x-auto gap-4 p-2 mx-auto">
-                            <!-- Los botones de ancla se insertarán aquí por JS -->
-                        </div>
-                        <button id="scroll-right" class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full w-12 h-12 items-center justify-center shadow-lg hover:bg-gray-200 transition-colors">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
-                </div>
-
-
-                <!-- Contenedor del Menú (se llenará con JS) -->
-                <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
-                    <!-- Las categorías y platos se insertan aquí dinámicamente -->
+                <p class="text-md mt-1 max-w-xs animate-on-load delay-1">Carne de res premium, queso cheddar, lechuga fresca, tomate y nuestra salsa secreta. ¡Un sabor que nunca falla!</p>
+                <div class="mt-4 animate-on-load delay-2">
+                    <span class="text-2xl font-bold">RD$350.00</span>
                 </div>
             </div>
         </section>
-    </main>
-    
-    <!-- ========== BOTÓN FLOTANTE DEL CARRITO ========== -->
-    <button id="cart-button" class="fixed bottom-6 right-6 bg-[var(--color-primary)] text-white w-20 h-20 rounded-full shadow-2xl flex items-center justify-center text-3xl transform hover:scale-110 transition-transform duration-300 z-40">
-        <i class="fas fa-shopping-cart"></i>
-        <span id="cart-count" class="absolute -top-1 -right-1 bg-[var(--color-secondary)] text-white text-sm rounded-full w-8 h-8 flex items-center justify-center border-2 border-[var(--color-primary)]">0</span>
-    </button>
 
-    <!-- ========== MODAL DEL CARRITO ========== -->
-    <div id="cart-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-display font-bold" style="color: var(--color-secondary);">Tu Pedido</h2>
-                <button id="close-cart-modal" class="text-3xl text-gray-400 hover:text-gray-800 transition-colors">&times;</button>
+        <!-- Short 2: BBQ Bacon -->
+        <section id="bbq" class="short-item">
+            <video class="background-video" autoplay loop muted playsinline poster="https://placehold.co/1080x1920/000000/ffffff?text=Cargando...">
+                <source src="beaconburger.mp4" type="video/mp4">
+            </video>
+            <div class="absolute top-0 left-0 p-6">
+                <h1 class="logo-header text-4xl font-black tracking-tighter">BurgerTok 🔥</h1>
             </div>
-            <div id="cart-items" class="mb-6 space-y-4 max-h-64 overflow-y-auto pr-2">
-                <!-- Los items del carrito se insertarán aquí -->
-            </div>
-            <div class="border-t pt-4">
-                <div class="mb-4">
-                    <label for="order-comment" class="block text-sm font-bold mb-2">Añadir un comentario general (opcional):</label>
-                    <textarea id="order-comment" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)]" rows="2" placeholder="Ej: Todo para llevar..."></textarea>
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-bold mb-2">Ubicación para Delivery:</label>
-                    <button type="button" id="select-location-btn" class="w-full p-3 border border-gray-300 rounded-lg text-left hover:bg-gray-50 transition-colors">Seleccionar en el mapa</button>
-                    <p id="location-status" class="text-xs text-gray-500 mt-1">Aún no has seleccionado una ubicación.</p>
-                </div>
-                
-                <!-- Desglose de precios -->
-                <div class="space-y-2 mb-4">
-                    <div class="flex justify-between items-center text-md">
-                        <span>Subtotal:</span>
-                        <span id="cart-subtotal">RD$0.00</span>
-                    </div>
-                    <div class="flex justify-between items-center text-md">
-                        <span>ITBIS (18%):</span>
-                        <span id="cart-tax">RD$0.00</span>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center text-xl font-bold mb-6 border-t pt-2">
-                    <span>Total:</span>
-                    <span id="cart-total" class="text-[var(--color-secondary)]">RD$0.00</span>
-                </div>
-                <div class="space-y-3">
-                    <a id="whatsapp-checkout" href="#" target="_blank" class="block w-full text-center bg-green-500 text-white py-4 rounded-full font-semibold hover:bg-green-600 transition-colors text-lg">
-                        <i class="fab fa-whatsapp mr-2"></i>Finalizar por WhatsApp
-                    </a>
-                    <button id="clear-cart-button" class="block w-full text-center bg-red-600 text-white py-3 rounded-full font-semibold hover:bg-red-700 transition-colors text-md">
-                        <i class="fas fa-trash mr-2"></i>Limpiar Carrito
+            <div class="absolute bottom-0 left-0 p-6 pb-24 w-full m3-content-container">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-3xl font-bold">BBQ Bacon</h2>
+                    <button class="add-to-cart-btn m3-button text-sm" data-id="bbq" data-name="BBQ Bacon" data-price="420">
+                        Agregar
                     </button>
                 </div>
+                <p class="text-md mt-1 max-w-xs">¡Para los amantes del ahumado! Tiras de tocino crujiente, aros de cebolla y nuestra salsa BBQ casera.</p>
+                <div class="mt-4">
+                    <span class="text-2xl font-bold">RD$420.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Short 3: Veggie Deluxe -->
+        <section id="veggie" class="short-item">
+            <video class="background-video" autoplay loop muted playsinline poster="https://placehold.co/1080x1920/000000/ffffff?text=Cargando...">
+                <source src="paella.mp4" type="video/mp4">
+            </video>
+             <div class="absolute top-0 left-0 p-6">
+                <h1 class="logo-header text-4xl font-black tracking-tighter">BurgerTok 🔥</h1>
+            </div>
+            <div class="absolute bottom-0 left-0 p-6 pb-24 w-full m3-content-container">
+                 <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-3xl font-bold">Veggie Deluxe</h2>
+                     <button class="add-to-cart-btn m3-button text-sm" data-id="veggie" data-name="Veggie Deluxe" data-price="380">
+                        Agregar
+                    </button>
+                </div>
+                <p class="text-md mt-1 max-w-xs">Una deliciosa hamburguesa de champiñones y frijoles negros, con aguacate, brotes y mayonesa vegana. ¡Sabor sin carne!</p>
+                <div class="mt-4">
+                    <span class="text-2xl font-bold">RD$380.00</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Botón de Compartir Flotante -->
+    <button id="share-button" class="fixed bottom-24 right-6 bg-white/20 backdrop-blur-sm text-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+    </button>
+
+    <!-- Botón del Carrito Flotante -->
+    <button id="cart-button" class="fixed bottom-6 right-6 m3-fab flex items-center justify-center transition-transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+    </button>
+    
+    <!-- Modal del Carrito -->
+    <div id="cart-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div class="m3-modal shadow-xl w-11/12 max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">Tu Pedido</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+            </div>
+            <div id="cart-items" class="max-h-60 overflow-y-auto space-y-3">
+                <!-- Los artículos del carrito se insertarán aquí -->
+            </div>
+            <div id="cart-summary" class="mt-6 border-t border-gray-700 pt-4">
+                <div class="flex justify-between text-lg">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">RD$0.00</span>
+                </div>
+                <div class="flex justify-between text-sm text-gray-400">
+                    <span>ITBIS (18%):</span>
+                    <span id="itbis">RD$0.00</span>
+                </div>
+                <div class="flex justify-between text-xl font-bold mt-2">
+                    <span>Total:</span>
+                    <span id="total">RD$0.00</span>
+                </div>
+                <button id="whatsapp-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-2xl mt-6 flex items-center justify-center transition-transform hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="mr-2"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.651 4.383 1.905 6.191l-1.04 3.833 3.897-1.032z"/></svg>
+                    Pedir por WhatsApp
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- ========== MODAL DE OPCIONES DE CARNE ========== -->
-    <div id="options-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-display font-bold" style="color: var(--color-secondary);">Personaliza tu corte</h2>
-                <button id="close-options-modal" class="text-3xl text-gray-400 hover:text-gray-800 transition-colors">&times;</button>
-            </div>
+    <!-- Aviso para el usuario -->
+    <div id="swipe-notice" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-3 py-1 rounded-full text-xs">
+        ↑ Desliza hacia arriba para ver más ↑
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+        const cartButton = document.getElementById('cart-button');
+        const shareButton = document.getElementById('share-button');
+        const cartModal = document.getElementById('cart-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cartCount = document.getElementById('cart-count');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const subtotalEl = document.getElementById('subtotal');
+        const itbisEl = document.getElementById('itbis');
+        const totalEl = document.getElementById('total');
+        const whatsappBtn = document.getElementById('whatsapp-btn');
+        const WHATSAPP_PHONE_NUMBER = '18495142209';
+        
+        const shortsContainer = document.querySelector('.shorts-container');
+        const logoHeaders = document.querySelectorAll('.logo-header');
+        const swipeNotice = document.getElementById('swipe-notice');
+        const shortItems = document.querySelectorAll('.short-item');
+
+        let cart = [];
+        let currentVisibleProductId = shortItems[0]?.id || '';
+
+        // Función para agregar al carrito
+        function addToCart(id, name, price) {
+            const existingItem = cart.find(item => item.id === id);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ id, name, price: parseFloat(price), quantity: 1 });
+            }
+            showNotification(`${name} agregado al carrito!`);
+
+            cartButton.classList.add('jiggle-animation');
+            cartButton.addEventListener('animationend', () => {
+                cartButton.classList.remove('jiggle-animation');
+            }, { once: true });
             
-            <form id="meat-options-form">
-                <!-- Opciones de Término -->
-                <div class="mb-6">
-                    <h3 class="text-xl font-bold mb-3">Término de la carne</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><label class="block bg-gray-100 p-3 rounded-lg text-center"><input type="radio" name="termino" value="Rojo" class="mr-2" checked>Rojo / Rare</label></div>
-                        <div><label class="block bg-gray-100 p-3 rounded-lg text-center"><input type="radio" name="termino" value="Medio" class="mr-2">Medio / Medium</label></div>
-                        <div><label class="block bg-gray-100 p-3 rounded-lg text-center"><input type="radio" name="termino" value="Tres Cuartos" class="mr-2">Tres Cuartos</label></div>
-                        <div><label class="block bg-gray-100 p-3 rounded-lg text-center"><input type="radio" name="termino" value="Bien Cocido" class="mr-2">Bien Cocido</label></div>
-                    </div>
-                </div>
+            updateCart();
+        }
+        
+        // Función para mostrar notificación
+        function showNotification(message) {
+            // Remove any existing notification
+            const existingNotification = document.querySelector('.fixed.top-5');
+            if(existingNotification) existingNotification.remove();
 
-                <!-- Opciones de Guarnición -->
-                <div class="mb-6">
-                    <h3 class="text-xl font-bold mb-3">Elige tu guarnición</h3>
-                    <div class="space-y-2">
-                        <label class="block bg-gray-100 p-3 rounded-lg"><input type="radio" name="guarnicion" value="Arroz Blanco" class="mr-2" checked>Arroz Blanco</label>
-                        <label class="block bg-gray-100 p-3 rounded-lg"><input type="radio" name="guarnicion" value="Puré de Papas" class="mr-2">Puré de Papas</label>
-                        <label class="block bg-gray-100 p-3 rounded-lg"><input type="radio" name="guarnicion" value="Ensalada Fresca" class="mr-2">Ensalada Fresca</label>
-                    </div>
-                </div>
-
-                <!-- Comentario para el plato -->
-                <div class="mb-8">
-                    <label for="meat-item-comment" class="block text-xl font-bold mb-3">Comentario para este plato</label>
-                    <textarea id="meat-item-comment" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)]" rows="2" placeholder="Ej: Sin sal, extra chimichurri..."></textarea>
-                </div>
-
-                <button type="submit" class="block w-full text-center bg-[var(--color-primary)] text-white py-4 rounded-full font-semibold hover:bg-[var(--color-secondary)] transition-colors text-lg">Confirmar y Añadir</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========== MODAL DE UBICACIÓN ========== -->
-    <div id="location-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-display font-bold" style="color: var(--color-secondary);">Selecciona tu ubicación</h2>
-                <button id="close-location-modal" class="text-3xl text-gray-400 hover:text-gray-800 transition-colors">&times;</button>
-            </div>
-            <p class="text-gray-600 mb-4">Arrastra el marcador rojo a tu ubicación exacta para el delivery.</p>
-            <div id="map" class="h-80 w-full rounded-lg border border-gray-300"></div>
-            <div class="mt-6">
-                <button id="confirm-location-btn" class="block w-full text-center bg-[var(--color-primary)] text-white py-4 rounded-full font-semibold hover:bg-[var(--color-secondary)] transition-colors text-lg">Confirmar Ubicación</button>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Footer -->
-    <footer class="bg-[var(--color-secondary)] text-white py-12">
-        <div class="container mx-auto px-6">
-            <div class="grid md:grid-cols-3 gap-8 text-center md:text-left">
-                <!-- Columna 1: Logo y Redes -->
-                <div>
-                    <h3 class="font-display text-3xl mb-4">La Esquina RD</h3>
-                    <div class="flex justify-center md:justify-start space-x-4">
-                        <a href="https://instagram.com/laesquinard" target="_blank" class="hover:opacity-80 transition-opacity">
-                            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c-4.01.083-5.555.594-6.383 1.157-.828.563-1.472 1.206-2.035 2.035C3.333 6.02 2.823 7.565 2.74 11.575c-.083 4.01.428 5.555 1.01 6.383.563.828 1.207 1.472 2.035 2.035.828.563 2.373 1.073 6.383 1.01 4.01-.063 5.555-.573 6.383-1.01.828-.563 1.472-1.207 2.035-2.035.583-.828 1.093-2.373 1.01-6.383-.083-4.01-.594-5.555-1.157-6.383-.563-.828-1.206-1.472-2.035-2.035C17.87 2.823 16.325 2.313 12.315 2zM12 7.045c-2.76 0-4.995 2.235-4.995 4.995S9.24 17.035 12 17.035s4.995-2.235 4.995-4.995S14.76 7.045 12 7.045zm0 8.21c-1.775 0-3.215-1.44-3.215-3.215S10.225 8.83 12 8.83s3.215 1.44 3.215 3.215-1.44 3.215-3.215 3.215zm4.905-8.835a1.18 1.18 0 100-2.36 1.18 1.18 0 000 2.36z" clip-rule="evenodd" /></svg>
-                        </a>
-                        <a href="https://wa.me/18495142209" target="_blank" class="hover:opacity-80 transition-opacity">
-                            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.79.46 3.48 1.32 4.94L2 22l5.25-1.38c1.41.79 3.02 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zM9.51 7.31c.24-.03.49-.05.73-.05.4 0 .8.07 1.18.21.38.14.61.43.69.73.08.3.09.64.03.97-.06.33-.2.63-.4.88-.2.25-.43.48-.69.69-.26.21-.55.39-.86.53-.31.14-.64.23-.98.26-1.38.12-2.58-.39-3.53-1.34s-1.46-2.15-1.34-3.53c.03-.34.12-.67.26-.98.14-.31.32-.6.53-.86.21-.26.43-.49.69-.69.25-.2.55-.34.88-.4.33-.06.67-.05.97.03.3.08.59.31.73.69.14.38.21.78.21 1.18 0 .24-.02.49-.05.73l-1.5 3.61c-.1.24-.25.46-.44.62-.19.16-.42.27-.67.31-.25.04-.51.02-.75-.05s-.47-.2-.66-.37c-.19-.17-.35-.38-.47-.61-.12-.23-.2-.48-.22-.74l.01-1.25c.01-.5.21-.98.57-1.34s.84-.56 1.34-.57l1.25-.01c.26-.02.51-.1.74-.22.23-.12.44-.28.61-.47.17-.19.32-.42.37-.66s.09-.5.05-.75c-.04-.25-.15-.48-.31-.67-.16-.19-.38-.34-.62-.44l-3.61-1.5z" /></svg>
-                        </a>
-                    </div>
-                </div>
-                <!-- Columna 2: Ubicación -->
-                <div>
-                    <h3 class="text-xl font-bold mb-3">Ubicación</h3>
-                    <p class="text-gray-300">C. Miguel Andres Abreu, esq. C. 27 de Febrero, Constanza, La Vega</p>
-                </div>
-                <!-- Columna 3: Horarios -->
-                <div>
-                    <h3 class="text-xl font-bold mb-3">Horarios</h3>
-                    <p class="text-gray-300">Lunes a Domingo</p>
-                    <p class="text-gray-300">12:00 PM - 12:00 AM</p>
-                </div>
-            </div>
-            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-                <p>&copy; 2024. Todos los derechos reservados.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        let map;
-        let marker;
-        let userLocation = null;
-
-        function initMap() {
-            const constanza = { lat: 18.9085, lng: -70.7441 };
-            map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 15,
-                center: constanza,
-            });
-            marker = new google.maps.Marker({
-                position: constanza,
-                map: map,
-                draggable: true,
-                title: "Arrastra a tu ubicación"
-            });
-
-            marker.addListener('dragend', () => {
-                const pos = marker.getPosition();
-                userLocation = { lat: pos.lat(), lng: pos.lng() };
-            });
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-2xl shadow-lg z-50';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 2000);
         }
 
-        // Lógica para el menú móvil
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
+        // Función para actualizar el carrito (UI y cálculos)
+        function updateCart() {
+            cartItemsContainer.innerHTML = '';
+            let subtotal = 0;
+            let totalItems = 0;
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-gray-400">Tu carrito está vacío.</p>';
+            } else {
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    subtotal += itemTotal;
+                    totalItems += item.quantity;
+
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'flex justify-between items-center text-sm';
+                    itemElement.innerHTML = `
+                        <div>
+                            <p class="font-bold">${item.name}</p>
+                            <p class="text-gray-400">RD$${item.price.toFixed(2)} x ${item.quantity}</p>
+                        </div>
+                        <span class="font-semibold">RD$${itemTotal.toFixed(2)}</span>
+                    `;
+                    cartItemsContainer.appendChild(itemElement);
+                });
+            }
+
+            const itbis = subtotal * 0.18;
+            const total = subtotal + itbis;
+
+            subtotalEl.textContent = `RD$${subtotal.toFixed(2)}`;
+            itbisEl.textContent = `RD$${itbis.toFixed(2)}`;
+            totalEl.textContent = `RD$${total.toFixed(2)}`;
+            cartCount.textContent = totalItems;
+        }
+
+        // Función para formatear el mensaje de WhatsApp
+        function formatWhatsappMessage() {
+            let message = '¡Hola! Quisiera hacer el siguiente pedido:\n\n';
+            cart.forEach(item => {
+                message += `*${item.quantity}x* - ${item.name}\n`;
+            });
+            message += '\n--------------------\n';
+            message += `*Subtotal: ${subtotalEl.textContent}*\n`;
+            message += `*ITBIS (18%): ${itbisEl.textContent}*\n`;
+            message += `*Total a pagar: ${totalEl.textContent}*`;
+            return encodeURIComponent(message);
+        }
+        
+        // Handle URL hash on page load
+        function scrollToHash() {
+            const hash = window.location.hash;
+            if (hash) {
+                const element = document.querySelector(hash);
+                if (element) {
+                    // We need a small delay for the scroll to work reliably on load
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+        }
+
+        // Event Listeners
+        addToCartButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const buttonElement = e.currentTarget;
+                const { id, name, price } = buttonElement.dataset;
+                
+                addToCart(id, name, price);
+                
+                buttonElement.classList.add('pop-animation');
+                buttonElement.addEventListener('animationend', () => {
+                    buttonElement.classList.remove('pop-animation');
+                }, { once: true });
+            });
         });
 
-        // Lógica para animaciones de entrada al hacer scroll
-        const revealElements = document.querySelectorAll('.reveal');
+        cartButton.addEventListener('click', () => {
+            updateCart();
+            cartModal.classList.remove('hidden');
+        });
+        
+        shareButton.addEventListener('click', () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}#${currentVisibleProductId}`;
+            try {
+                // Use the modern clipboard API
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    showNotification("¡Enlace del producto copiado!");
+                });
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = shareUrl;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification("¡Enlace del producto copiado!");
+                } catch (err) {
+                    showNotification("Error al copiar enlace.");
+                }
+                document.body.removeChild(textArea);
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            cartModal.classList.add('hidden');
+        });
+
+        cartModal.addEventListener('click', (e) => {
+            if (e.target.id === 'cart-modal') {
+                cartModal.classList.add('hidden');
+            }
+        });
+        
+        whatsappBtn.addEventListener('click', () => {
+            if (cart.length === 0) {
+                 showNotification("Tu carrito está vacío.");
+                return;
+            }
+            const message = formatWhatsappMessage();
+            const whatsappUrl = `https://api.whatsapp.com/send/?phone=${WHATSAPP_PHONE_NUMBER}&text=${message}&type=phone_number&app_absent=0`;
+            window.open(whatsappUrl, '_blank');
+        });
+        
+        shortsContainer.addEventListener('scroll', () => {
+            const isScrolled = shortsContainer.scrollTop > 20;
+            logoHeaders.forEach(logo => logo.classList.toggle('fade-out', isScrolled));
+            swipeNotice.classList.toggle('fade-out', isScrolled);
+        });
+        
+        // Observer to detect which item is visible for the share button
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
+                    currentVisibleProductId = entry.target.id;
                 }
             });
-        }, { threshold: 0.1 });
-        revealElements.forEach(el => observer.observe(el));
+        }, { threshold: 0.7 }); // 70% of the item must be visible
 
-        // ==================================================
-        // LÓGICA DEL CARRITO DE COMPRAS Y MENÚ DINÁMICO
-        // ==================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // --- Base de datos de todos los platos ---
-            const almuerzoMenuData = {
-                arroces: [
-                    { name: 'Paella Marinera', price: 850 },
-                    { name: 'Paella Valenciana', price: 800 },
-                    { name: 'Arroz con vegetales', price: 450 }
-                ],
-                platosFuertes: [
-                    { name: 'Costillitas St. Louis', price: 650 },
-                    { name: 'Pechugas Napolitanas', price: 550 },
-                    { name: 'Pechugas (plancha/ajillo/crema)', price: 500 },
-                    { name: 'Pastelón de plátanos maduros', price: 480 },
-                    { name: 'Lasagna de carne y queso', price: 520 }
-                ],
-                entradas: [
-                    { name: 'Rollitos de berenjena trufados', price: 350 },
-                    { name: 'Ensalada verde fresca', price: 250 }
-                ],
-                postres: [
-                    { name: 'Brownies', price: 90 },
-                    { name: 'Brownies a la Mode', price: 225 },
-                    { name: 'Tarta Vasca', price: 195 }
-                ]
-            };
+        shortItems.forEach(item => observer.observe(item));
 
-            const cenaMenuData = {
-                pastas: [
-                    { name: 'Pasta Pomodoro', price: 250 },
-                    { name: 'Pasta Bechamel', price: 250 },
-                    { name: 'Pasta de Pollo', price: 400 },
-                    { name: 'Pasta de Camarones', price: 550 },
-                    { name: 'Boloñesa', price: 450 }
-                ],
-                hamburguesas: [
-                    { name: 'Angus 8 onzas', price: 390 },
-                    { name: 'Angus Bacon & Cheese', price: 450 },
-                    { name: 'Doble Angus Cheese', price: 800 },
-                    { name: 'Mar & Tierra', price: 650 },
-                    { name: 'Pollo', price: 350 }
-                ],
-                ensaladas: [
-                    { name: 'Ensalada de Pollo', price: 350 },
-                    { name: 'Tortilla Española', price: 300 },
-                    { name: 'Wraps Angus', price: 350 },
-                    { name: 'Wraps Pollo', price: 350 },
-                    { name: 'Wraps de Camarones', price: 450 },
-                    { name: 'Wraps de Vegetales', price: 250 }
-                ],
-                mofongos: [
-                    { name: 'Mofongo', price: 390 },
-                    { name: 'Mofongo Mixto', price: 490 },
-                    { name: 'Mofongo de Camarones', price: 750 }
-                ],
-                caldos: [
-                    { name: 'Crema de Auyama', price: 220 }
-                ],
-                entradas: [
-                    { name: 'Patatas Bravas', price: 220 },
-                    { name: 'Servicio Croquetas Duende', price: 180 },
-                    { name: 'Servicio Croquetas Chorizo', price: 180 },
-                    { name: 'Servicio Croquetas Pollo', price: 180 },
-                    { name: 'Servicio Bastones de Mozzarella', price: 180 },
-                    { name: 'Lomo de cerdo a la sal', price: 195 }
-                ],
-                angus: [
-                    { name: 'Churrasco', price: 990 },
-                    { name: 'Flap Meat 8 - 10 oz', price: 750 },
-                    { name: 'Picaña Angus 16 - 18 onzas', price: 1100 }
-                ],
-                grill: [
-                    { name: 'Pechuga a la Cordon Bleu', price: 590 },
-                    { name: 'Chuletas a la Parrilla', price: 390 },
-                    { name: 'Filete de Cerdo', price: 500 },
-                    { name: 'Parrillada Mixta (2 pers.)', price: 950 }
-                ],
-                embutidos: [
-                    { name: 'Tabla de Queso Manchego', price: 250 },
-                    { name: 'Tabla de Jamón Serrano', price: 290 },
-                    { name: 'Tabla de Embutidos', price: 305 },
-                    { name: 'Provoleta', price: 275 }
-                ],
-                 postres: [
-                    { name: 'Cortado de leche', price: 160 }
-                ],
-            };
-            
-            const acompañamientosData = {
-                acompanamientos: [
-                    { name: 'Arroz Blanco & Habichuelas', price: 0 },
-                    { name: 'Pan Fresco', price: 0 },
-                    { name: 'Casabe', price: 0 },
-                    { name: 'Tostones', price: 0 },
-                    { name: 'Papas Wedge', price: 75 },
-                    { name: 'Papas Fritas', price: 0 },
-                    { name: 'Papas Salteadas', price: 110 },
-                    { name: 'Pure de Papas', price: 90 },
-                    { name: 'Pure de Rabanos', price: 120 },
-                    { name: 'Vegetales al Grill', price: 120 },
-                    { name: 'Bastones de Yuca', price: 75 }
-                ]
-            };
-
-
-            const meatCategories = ['angus', 'grill', 'platosFuertes'];
-            let cart = [];
-            let currentItemForOptions = null;
-
-            const cartButton = document.getElementById('cart-button');
-            const cartCount = document.getElementById('cart-count');
-            const cartModalOverlay = document.getElementById('cart-modal-overlay');
-            const closeCartModalButton = document.getElementById('close-cart-modal');
-            const clearCartButton = document.getElementById('clear-cart-button');
-            const optionsModalOverlay = document.getElementById('options-modal-overlay');
-            const closeOptionsModalButton = document.getElementById('close-options-modal');
-            const meatOptionsForm = document.getElementById('meat-options-form');
-            const orderComment = document.getElementById('order-comment');
-            const menuGrid = document.getElementById('menu-grid');
-            const menuTitle = document.getElementById('menu-title');
-            const menuAnchors = document.getElementById('menu-anchors');
-            const scrollLeftBtn = document.getElementById('scroll-left');
-            const scrollRightBtn = document.getElementById('scroll-right');
-            const locationModalOverlay = document.getElementById('location-modal-overlay');
-            const selectLocationBtn = document.getElementById('select-location-btn');
-            const closeLocationModalBtn = document.getElementById('close-location-modal');
-            const confirmLocationBtn = document.getElementById('confirm-location-btn');
-
-            // --- Lógica para determinar el menú según la hora ---
-            const getCurrentMenu = () => {
-                const currentHour = new Date().getHours();
-                // Horario de almuerzo: 12:00 (12) a 16:59 (4:59 PM)
-                if (currentHour >= 12 && currentHour < 17) {
-                    menuTitle.textContent = "Menú de Almuerzo";
-                    return { ...almuerzoMenuData, ...acompañamientosData };
-                }
-                // Horario de cena: 17:00 (5 PM) en adelante
-                menuTitle.textContent = "Menú de Cena";
-                return { ...cenaMenuData, ...acompañamientosData };
-            };
-
-            const renderMenu = () => {
-                const activeMenu = getCurrentMenu();
-                menuGrid.innerHTML = ''; // Limpiar el menú existente
-                menuAnchors.innerHTML = ''; // Limpiar los anclajes existentes
-
-                let delay = 0;
-                for (const category in activeMenu) {
-                    // --- Crear y añadir el botón de ancla ---
-                    const anchorButton = document.createElement('a');
-                    anchorButton.href = `#category-${category}`;
-                    anchorButton.className = "flex-shrink-0 bg-white shadow-sm hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-300 text-gray-800 font-semibold py-3 px-6 rounded-full text-base";
-                    anchorButton.textContent = category.charAt(0).toUpperCase() + category.slice(1).replace(/([A-Z])/g, ' $1');
-                    menuAnchors.appendChild(anchorButton);
-
-                    // --- Crear la sección de la categoría ---
-                    const categoryContainer = document.createElement('div');
-                    categoryContainer.className = 'reveal space-y-6';
-                    categoryContainer.style.transitionDelay = `${delay}s`;
-                    categoryContainer.id = `category-${category}`; // ID para el ancla
-
-                    // Crear el título de la categoría
-                    const categoryTitle = document.createElement('h3');
-                    categoryTitle.className = 'text-3xl font-bold font-display text-[var(--color-primary)] border-b-2 border-[var(--color-primary)] pb-3 mb-6';
-                    categoryTitle.textContent = category.charAt(0).toUpperCase() + category.slice(1).replace(/([A-Z])/g, ' $1');
-
-                    // Crear el contenedor para los platos
-                    const itemsContainer = document.createElement('div');
-                    itemsContainer.className = 'space-y-6';
-                    itemsContainer.innerHTML = activeMenu[category].map(item => menuItem(item, category)).join('');
-                    
-                    categoryContainer.appendChild(categoryTitle);
-                    categoryContainer.appendChild(itemsContainer);
-                    menuGrid.appendChild(categoryContainer);
-
-                    delay += 0.1;
-                }
-                 // Volver a inicializar los observadores para las nuevas animaciones
-                const newRevealElements = document.querySelectorAll('.reveal');
-                newRevealElements.forEach(el => observer.observe(el));
-                checkScroll(); // Comprobar si las flechas son necesarias
-            };
-
-            const menuItem = (item, category) => `
-                <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                    <div>
-                        <p class="font-bold text-lg">${item.name}</p>
-                        <p class="font-semibold text-lg" style="color: var(--color-secondary);">RD$${item.price}</p>
-                    </div>
-                    <button class="add-to-cart-btn bg-[var(--color-primary)] text-white rounded-full w-12 h-12 text-2xl font-bold hover:bg-[var(--color-secondary)] transition-all duration-300 flex items-center justify-center" 
-                            data-name="${item.name}" 
-                            data-price="${item.price}"
-                            data-category="${category}">
-                        +
-                    </button>
-                </div>
-            `;
-
-            const addToCart = (name, price) => {
-                const existingItem = cart.find(item => item.name === name);
-                if (existingItem) {
-                    existingItem.quantity++;
-                } else {
-                    cart.push({ name, price, quantity: 1 });
-                }
-                updateCartUI();
-                cartButton.classList.remove('shake');
-                cartCount.classList.remove('bounce');
-                void cartButton.offsetWidth;
-                void cartCount.offsetWidth;
-                cartButton.classList.add('shake');
-                cartCount.classList.add('bounce');
-            };
-            
-            const clearCart = () => {
-                cart = [];
-                updateCartUI();
-            };
-
-            const renderCart = () => {
-                const cartItemsContainer = document.getElementById('cart-items');
-                if (cart.length === 0) {
-                    cartItemsContainer.innerHTML = '<p class="text-gray-500">Tu carrito está vacío.</p>';
-                    return;
-                }
-                cartItemsContainer.innerHTML = cart.map(item => `
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-semibold">${item.name}</p>
-                            <p class="text-sm text-gray-600">RD$${item.price} x ${item.quantity}</p>
-                        </div>
-                        <div class="font-bold text-lg">RD$${(item.price * item.quantity).toFixed(2)}</div>
-                    </div>
-                `).join('');
-            };
-
-            const updateCartUI = () => {
-                renderCart();
-                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const tax = subtotal * 0.18;
-                const finalTotal = subtotal + tax;
-
-                document.getElementById('cart-subtotal').textContent = `RD$${subtotal.toFixed(2)}`;
-                document.getElementById('cart-tax').textContent = `RD$${tax.toFixed(2)}`;
-                document.getElementById('cart-total').textContent = `RD$${finalTotal.toFixed(2)}`;
-                
-                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-                cartCount.textContent = totalItems;
-                generateWhatsAppLink();
-            };
-
-            const generateWhatsAppLink = () => {
-                if (cart.length === 0) return;
-                const phoneNumber = "18495142209";
-                let message = "¡Hola! Quisiera hacer el siguiente pedido:\n\n";
-                cart.forEach(item => {
-                    message += `*${item.quantity}x* - ${item.name}\n`;
-                });
-                
-                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const tax = subtotal * 0.18;
-                const finalTotal = subtotal + tax;
-
-                message += `\n--------------------`;
-                message += `\n*Subtotal: RD$${subtotal.toFixed(2)}*`;
-                message += `\n*ITBIS (18%): RD$${tax.toFixed(2)}*`;
-                message += `\n*Total a pagar: RD$${finalTotal.toFixed(2)}*`;
-                
-                if (userLocation) {
-                    const locationLink = `https://www.google.com/maps?q=${userLocation.lat},${userLocation.lng}`;
-                    message += `\n\n*Ubicación de Entrega:* ${locationLink}`;
-                }
-
-                const comment = orderComment.value.trim();
-                if (comment) {
-                    message += `\n\n*Comentario General:* ${comment}`;
-                }
-
-                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-                document.getElementById('whatsapp-checkout').href = whatsappUrl;
-            };
-
-            document.querySelector('main').addEventListener('click', (e) => {
-                const button = e.target.closest('.add-to-cart-btn');
-                if (!button) return;
-
-                const name = button.dataset.name;
-                const price = parseInt(button.dataset.price);
-                const category = button.dataset.category;
-
-                if (meatCategories.includes(category)) {
-                    currentItemForOptions = { name, price, button };
-                    optionsModalOverlay.classList.add('active');
-                } else {
-                    addToCart(name, price);
-                    // Animación de feedback en el botón
-                    button.classList.add('added');
-                    button.innerHTML = '<i class="fas fa-check pointer-events-none"></i>';
-                    setTimeout(() => {
-                        button.classList.remove('added');
-                        button.innerHTML = '+';
-                    }, 1000);
-                }
-            });
-            
-            meatOptionsForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const formData = new FormData(meatOptionsForm);
-                const termino = formData.get('termino');
-                const guarnicion = formData.get('guarnicion');
-                const itemComment = document.getElementById('meat-item-comment').value.trim();
-                
-                const { name, price, button } = currentItemForOptions;
-                let customizedName = `${name} (${termino}, con ${guarnicion})`;
-                
-                if (itemComment) {
-                    customizedName += ` - (${itemComment})`;
-                }
-                
-                addToCart(customizedName, price);
-                
-                // Animación de feedback en el botón
-                button.classList.add('added');
-                button.innerHTML = '<i class="fas fa-check pointer-events-none"></i>';
-                setTimeout(() => {
-                    button.classList.remove('added');
-                    button.innerHTML = '+';
-                }, 1000);
-
-                optionsModalOverlay.classList.remove('active');
-                meatOptionsForm.reset(); // Limpia el formulario para la próxima vez
-                currentItemForOptions = null;
-            });
-
-            // Lógica para abrir y cerrar modales
-            cartButton.addEventListener('click', () => {
-                cartModalOverlay.classList.add('active');
-                generateWhatsAppLink(); // Asegurarse de que el link esté actualizado al abrir
-            });
-            closeCartModalButton.addEventListener('click', () => cartModalOverlay.classList.remove('active'));
-            cartModalOverlay.addEventListener('click', (e) => {
-                if (e.target === cartModalOverlay) cartModalOverlay.classList.remove('active');
-            });
-            
-            clearCartButton.addEventListener('click', clearCart);
-
-            closeOptionsModalButton.addEventListener('click', () => {
-                optionsModalOverlay.classList.remove('active');
-                meatOptionsForm.reset(); // Limpia el formulario si se cierra sin confirmar
-            });
-            optionsModalOverlay.addEventListener('click', (e) => {
-                if (e.target === optionsModalOverlay) {
-                    optionsModalOverlay.classList.remove('active');
-                    meatOptionsForm.reset(); // Limpia el formulario si se cierra sin confirmar
-                }
-            });
-
-            // Lógica para el modal de ubicación
-            selectLocationBtn.addEventListener('click', () => locationModalOverlay.classList.add('active'));
-            closeLocationModalBtn.addEventListener('click', () => locationModalOverlay.classList.remove('active'));
-            locationModalOverlay.addEventListener('click', (e) => {
-                if (e.target === locationModalOverlay) locationModalOverlay.classList.remove('active');
-            });
-            confirmLocationBtn.addEventListener('click', () => {
-                if (!userLocation) {
-                    const pos = marker.getPosition();
-                    userLocation = { lat: pos.lat(), lng: pos.lng() };
-                }
-                locationModalOverlay.classList.remove('active');
-                document.getElementById('location-status').textContent = `Ubicación guardada.`;
-                document.getElementById('select-location-btn').textContent = 'Cambiar ubicación';
-                generateWhatsAppLink();
-            });
-
-            // Actualizar el link de WhatsApp cuando se escribe un comentario
-            orderComment.addEventListener('input', generateWhatsAppLink);
-            
-            // --- Lógica para las flechas de scroll del menú ---
-            const checkScroll = () => {
-                const { scrollLeft, scrollWidth, clientWidth } = menuAnchors;
-                scrollLeftBtn.style.display = scrollLeft > 0 ? 'flex' : 'none';
-                scrollRightBtn.style.display = scrollLeft < scrollWidth - clientWidth - 1 ? 'flex' : 'none';
-            };
-
-            scrollLeftBtn.addEventListener('click', () => {
-                menuAnchors.scrollBy({ left: -250, behavior: 'smooth' });
-            });
-            scrollRightBtn.addEventListener('click', () => {
-                menuAnchors.scrollBy({ left: 250, behavior: 'smooth' });
-            });
-            menuAnchors.addEventListener('scroll', checkScroll);
-            window.addEventListener('resize', checkScroll); // Comprobar al cambiar tamaño de ventana
-
-            // Renderizar el menú inicial según la hora
-            renderMenu();
-        });
-    </script>
+        // Inicializar
+        updateCart();
+        scrollToHash();
+    });
+</script>
 
 </body>
 </html>
